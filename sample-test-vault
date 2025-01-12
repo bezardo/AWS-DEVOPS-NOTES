@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: vault
+  annotations:
+    vault.hashicorp.com/agent-inject: "true"
+    vault.hashicorp.com/agent-inject-secret-example-secret: "secret/data/example"
+    vault.hashicorp.com/role: "vault-role"
+data:
+  app.conf: |
+    environment: production
+    log_level: debug
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault-test
+  namespace: vault
+  labels:
+    app: vault-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vault-test
+  template:
+    metadata:
+      labels:
+        app: vault-test
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/agent-inject-secret-example-secret: "secret/data/example"
+        vault.hashicorp.com/role: "vault-role"
+    spec:
+      serviceAccountName: vault-serviceaccount
+      containers:
+      - name: test-app
+        image: busybox
+        command: ["sh", "-c", "cat /vault/secrets/example-secret && sleep 3600"]
